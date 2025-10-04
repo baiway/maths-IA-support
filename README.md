@@ -59,7 +59,5 @@ Fit function is therefore:
 A bivariate quadratic fit to the data from Table 3 (see `data.csv`). The dots show your measurements.
 
 This does not match your fit function,
-$$
-z = f_\text{seat}(x, y) = -0.005x^2 - 0.008y^2 + 0.001xy + 0.5,
-$$
+$$z = f_\text{seat}(x, y) = -0.005x^2 - 0.008y^2 + 0.001xy + 0.5,$$
 which means that the above numerical integration (which uses the partial derivatives $\partial z / \partial x$ and $\partial z / \partial y$) **may be wrong**. It's a simple fix -- we just need to change the fit function in `numeric-integrator.py` -- but we should probably discuss this first.
