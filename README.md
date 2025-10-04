@@ -4,6 +4,9 @@
 **How to run the code**: See [running-code.md](running-code.md)
 
 ## Checking surface area calculation using numerical integration
+![Surface area visualization showing the numerical integration over the fitted surface](img/2d-integral-visualisation.png)
+*Visualisation of the surface integral calculation showing $z = f_\text{seat}(x, y)$ over the rectangular domain $x \in [-20, 20]$, $y \in [-15, 15]$*
+
 I wrote a Python program that calculates the surface area via numerical integration. The program is called `numeric-integrator.py`. I'm happy to explain how it works in our next lesson (or you can ask an LLM like DeepSeek -- it should be able to understand the code if you copy & paste it in). Importantly, the program uses the partial derivatives that you determined and gets the same result that you did.
 ```text
 Computing the integral:
@@ -51,6 +54,10 @@ a5 = np.float64(-0.03323462922651155) ± 0.005517821131656234
 Fit function is therefore:
  z = f(x, y) = 4.215788 + -0.006303x + -0.006599y + -0.008132x^2 + 0.001509xy + -0.033235y^2
 ```
+
+![2D fitted surface with data points](img/2d-fit.png)
+*A bivariate quadratic fit to the data from Table 3 (see `data.csv`). The dots show your measurements.*
+
 This does not match your fit function,
 $$
 z = f_\text{seat}(x, y) = -0.005x^2 - 0.008y^2 + 0.001xy + 0.5,
