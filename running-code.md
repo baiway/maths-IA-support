@@ -11,7 +11,7 @@ You'll need Python 3 installed on your computer. If you don't have Python instal
 
 1. **Clone this repository** to your computer:
    ```sh
-   git clone <add_link>
+   git clone https://github.com/baiway/maths-IA-support.git
    ```
 
 2. **Open a terminal** and navigate to the project folder:
