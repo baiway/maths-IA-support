@@ -2,12 +2,15 @@ import numpy as np
 from scipy import integrate
 
 
-def integrand(x: float, y: float) -> float:
-    """Computes sqrt(1 + (-0.01x + 0.001y)^2 + (-0.016y + 0.001x)^2)"""
-    return np.sqrt(1 + (-0.01*x + 0.001*y)**2 + (-0.016*y + 0.001*x)**2)
+def integrand(x: float, y: float, a1: float, a2: float, a3: float,
+    a4: float, a5: float) -> float:
+    dzdx = a1 + 2*a3*x + a4*y
+    dzdy = a2 + a4*x + 2*a5*y
+    return np.sqrt(1 + dzdx**2 + dzdy**2)
 
 
 def trapezium_rule(x_min: float, x_max: float, y_min: float, y_max: float,
+    a1: float, a2: float, a3: float, a4: float, a5: float,
     nx: int, ny: int) -> float:
     """Performs double integration using the trapezium rule."""
     # Create grid
@@ -27,15 +30,16 @@ def trapezium_rule(x_min: float, x_max: float, y_min: float, y_max: float,
             if j == 0 or j == ny:
                 weight *= 0.5
 
-            total += weight * integrand(x[i], y[j])
+            total += weight * integrand(x[i], y[j], a1, a2, a3, a4, a5)
     return total * dx * dy
 
 
-def scipy_integration(x_min: float, x_max: float, y_min: float, y_max: float):
+def scipy_integration(x_min: float, x_max: float, y_min: float, y_max: float,
+    a1: float, a2: float, a3: float, a4: float, a5: float) -> tuple[float, float]:
     """Performs double integration using `scipy.dblquad`, which uses
     adaptive quadrature for improved accuracy (slower)."""
     result, error = integrate.dblquad(
-        lambda y, x: integrand(x, y),  # dblquad expects y first
+        lambda y, x: integrand(x, y, a1, a2, a3, a4, a5),  # dblquad expects y first
         x_min, x_max,  # x limits
         y_min, y_max   # y limits (can be functions of x in general)
     )
@@ -43,6 +47,7 @@ def scipy_integration(x_min: float, x_max: float, y_min: float, y_max: float):
 
 
 def vectorised_trap(x_min: float, x_max: float, y_min: float, y_max: float,
+    a1: float, a2: float, a3: float, a4: float, a5: float,
     nx: int, ny: int):
     """Vectorises the trapezium rule calculation"""
     x = np.linspace(x_min, x_max, nx + 1)
@@ -50,7 +55,9 @@ def vectorised_trap(x_min: float, x_max: float, y_min: float, y_max: float,
     X, Y = np.meshgrid(x, y)
 
     # Vectorized computation of the integrand
-    Z = np.sqrt(1 + (-0.01*X + 0.001*Y)**2 + (-0.016*Y + 0.001*X)**2)
+    dZdX = a1 + 2*a3*X + a4*Y
+    dZdY = a2 + a4*X + 2*a5*Y
+    Z = np.sqrt(1 + dZdX**2 + dZdY**2)
 
     # Trapezoidal integration using numpy
     dx = (x_max - x_min) / nx
@@ -64,22 +71,41 @@ def vectorised_trap(x_min: float, x_max: float, y_min: float, y_max: float,
 
     return np.sum(Z) * dx * dy
 
+print("Enter coefficients of fit function: ")
+print("  z = f(x, y) = a0 + a1*x + a2*y + a3*x^2 + a4*xy + a5*y^2")
+a0 = float(input("  a0 = "))
+a1 = float(input("  a1 = "))
+a2 = float(input("  a2 = "))
+a3 = float(input("  a3 = "))
+a4 = float(input("  a4 = "))
+a5 = float(input("  a5 = "))
+print("\nYou've supplied the following:")
+print(f"  z = f(x, y) = {a0:.6f} + {a1:.6f}x + {a2:.6f}y + {a3:.6f}x^2" +
+      f" + {a4:.6f}xy + {a5:.6f}y^2")
+print("\nThis gives the following partial derivatives:")
+print(f"  dz/dx = {a1:.6f} + {2*a3:.6f}x + {a4:.6f}y")
+print(f"  dz/dy = {a2:.6f} + {a4:.6f}x + {2*a5:.6f}y")
+print("Enter integration limits: ")
+x_min = float(input("  xlim = "))
+x_max = float(input("  xmax = "))
+y_min = float(input("  y_min = "))
+y_max = float(input("  y_max = "))
 
 # Define integration bounds
-x_min, x_max = -20, 20
-y_min, y_max = -15, 15
+x_min, x_max = -10, 10
+y_min, y_max = -8, 8
 
-print("Computing the integral:")
-print(f"A = ∫∫ sqrt(1 + (-0.01x + 0.001y)² + (-0.016y + 0.001x)²) dx dy")
+print("\nComputing the integral:")
+print(f"A = ∫∫ sqrt(1 + (dz/dx)² + (dz/dy)²) dx dy")
 print(f"Over region: [{x_min}, {x_max}] × [{y_min}, {y_max}]")
 print("-" * 60)
 
 # Method 1: Trapezoidal rule with different grid sizes
 print("\nMethod 1: Trapezoidal Rule")
-result1 = trapezium_rule(x_min, x_max, y_min, y_max, 200, 150)
+result1 = trapezium_rule(x_min, x_max, y_min, y_max, a1, a2, a3, a4, a5, 200, 150)
 print(f"  Grid 201×151: A = {result1:.6f}")
 
-result2 = trapezium_rule(x_min, x_max, y_min, y_max, 400, 300)
+result2 = trapezium_rule(x_min, x_max, y_min, y_max, a1, a2, a3, a4, a5, 400, 300)
 print(f"  Grid 401×301: A = {result2:.6f}")
 
 print(f"  Difference: {abs(result2 - result1):.6f}")
@@ -87,13 +113,13 @@ print(f"  Relative difference: {abs(result2 - result1)/result2 * 100:.6f}%")
 
 # Method 2: Vectorised computation (same algorithm, faster implementation)
 print("\nMethod 2: Vectorised Trapezoidal")
-result3 = vectorised_trap(x_min, x_max, y_min, y_max, 400, 300)
+result3 = vectorised_trap(x_min, x_max, y_min, y_max, a1, a2, a3, a4, a5, 400, 300)
 print(f"  Grid 401×301: A = {result3:.6f}")
 
 # Method 3: SciPy's adaptive quadrature (most accurate but slower)
 print("\nMethod 3: SciPy's dblquad (adaptive quadrature)")
 print("  (This may take a moment...)")
-result4, error = scipy_integration(x_min, x_max, y_min, y_max)
+result4, error = scipy_integration(x_min, x_max, y_min, y_max, a1, a2, a3, a4, a5)
 print(f"  A = {result4:.6f} ± {error:.2e}")
 
 # Summary
