@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import argparse
 
 def fit(xy: tuple[float, float], a0: float, a1: float, a2: float, a3: float,
     a4: float, a5: float) -> float:
@@ -10,7 +11,14 @@ def fit(xy: tuple[float, float], a0: float, a1: float, a2: float, a3: float,
     x, y = xy
     return a0 + a1*x + a2*y + a3*x**2 + a4*x*y + a5*y**2
 
-x, y, z = np.loadtxt("data.csv", dtype=np.float64, delimiter=",", unpack=True)
+parser = argparse.ArgumentParser(description="Fits a bivariate quadratic.")
+parser.add_argument(dest="filename", type=str,
+        help="Path to `.csv` file containing (x,y,z) data."
+)
+args = parser.parse_args()
+filename = args.filename
+
+x, y, z = np.loadtxt(filename, dtype=np.float64, delimiter=",", unpack=True)
 popt, pcov = curve_fit(fit, (x, y), z)
 
 # Unpack optimised parameters (and their errors) from fit
