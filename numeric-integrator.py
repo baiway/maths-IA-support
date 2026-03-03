@@ -1,5 +1,16 @@
+import argparse
 import numpy as np
 from scipy import integrate
+from scipy.optimize import curve_fit
+
+
+def fit(xy: tuple[float, float], a0: float, a1: float, a2: float, a3: float,
+    a4: float, a5: float) -> float:
+    """Bivariate quadratic:
+      z = f(x, y) = a0 + a1*x + a2*y + a3*x**2 + a4*x*y + a5*y**2
+    """
+    x, y = xy
+    return a0 + a1*x + a2*y + a3*x**2 + a4*x*y + a5*y**2
 
 
 def integrand(x: float, y: float, a1: float, a2: float, a3: float,
@@ -71,33 +82,42 @@ def vectorised_trap(x_min: float, x_max: float, y_min: float, y_max: float,
 
     return np.sum(Z) * dx * dy
 
-print("Enter coefficients of fit function: ")
-print("  z = f(x, y) = a0 + a1*x + a2*y + a3*x^2 + a4*xy + a5*y^2")
-a0 = float(input("  a0 = "))
-a1 = float(input("  a1 = "))
-a2 = float(input("  a2 = "))
-a3 = float(input("  a3 = "))
-a4 = float(input("  a4 = "))
-a5 = float(input("  a5 = "))
-print("\nYou've supplied the following:")
-print(f"  z = f(x, y) = {a0:.6f} + {a1:.6f}x + {a2:.6f}y + {a3:.6f}x^2" +
+
+parser = argparse.ArgumentParser(
+    description="Fits a bivariate quadratic to (x,y,z) data and computes the surface area."
+)
+parser.add_argument(dest="filename", type=str,
+    help="Path to `.csv` file containing (x,y,z) data."
+)
+args = parser.parse_args()
+
+x, y, z = np.loadtxt(args.filename, dtype=np.float64, delimiter=",",
+                      unpack=True, comments="#")
+popt, pcov = curve_fit(fit, (x, y), z)
+a0, a1, a2, a3, a4, a5 = popt
+a0err, a1err, a2err, a3err, a4err, a5err = np.sqrt(np.diag(pcov))
+
+print("Fit coefficients:")
+print(f"  a0 = {a0:.6f} ± {a0err:.6f}")
+print(f"  a1 = {a1:.6f} ± {a1err:.6f}")
+print(f"  a2 = {a2:.6f} ± {a2err:.6f}")
+print(f"  a3 = {a3:.6f} ± {a3err:.6f}")
+print(f"  a4 = {a4:.6f} ± {a4err:.6f}")
+print(f"  a5 = {a5:.6f} ± {a5err:.6f}")
+print(f"\nFit function:")
+print(f"  z = f(x, y) = {a0:.6f} + {a1:.6f}x + {a2:.6f}y + {a3:.6f}x^2"
       f" + {a4:.6f}xy + {a5:.6f}y^2")
-print("\nThis gives the following partial derivatives:")
+print(f"\nPartial derivatives:")
 print(f"  dz/dx = {a1:.6f} + {2*a3:.6f}x + {a4:.6f}y")
 print(f"  dz/dy = {a2:.6f} + {a4:.6f}x + {2*a5:.6f}y")
-print("Enter integration limits: ")
-x_min = float(input("  xlim = "))
-x_max = float(input("  xmax = "))
-y_min = float(input("  y_min = "))
-y_max = float(input("  y_max = "))
 
-# Define integration bounds
-x_min, x_max = -10, 10
-y_min, y_max = -8, 8
+# Derive integration limits from the data
+x_min, x_max = float(np.min(x)), float(np.max(x))
+y_min, y_max = float(np.min(y)), float(np.max(y))
 
-print("\nComputing the integral:")
-print(f"A = ∫∫ sqrt(1 + (dz/dx)² + (dz/dy)²) dx dy")
-print(f"Over region: [{x_min}, {x_max}] × [{y_min}, {y_max}]")
+print(f"\nComputing the integral:")
+print(f"  A = ∫∫ sqrt(1 + (dz/dx)² + (dz/dy)²) dx dy")
+print(f"  Over region: [{x_min}, {x_max}] × [{y_min}, {y_max}]")
 print("-" * 60)
 
 # Method 1: Trapezoidal rule with different grid sizes
@@ -123,23 +143,25 @@ result4, error = scipy_integration(x_min, x_max, y_min, y_max, a1, a2, a3, a4, a
 print(f"  A = {result4:.6f} ± {error:.2e}")
 
 # Summary
+x_range = x_max - x_min
+y_range = y_max - y_min
 print("\n" + "=" * 60)
 print("SUMMARY:")
 print(f"  The integral A ≈ {result2:.2f}")
-print(f"  Rectangle area (40 × 30) = {40*30}")
-print(f"  Ratio A/Rectangle = {result2/1200:.4f}")
+print(f"  Rectangle area ({x_range:.0f} × {y_range:.0f}) = {x_range * y_range:.0f}")
+print(f"  Ratio A/Rectangle = {result2 / (x_range * y_range):.4f}")
 
 # Optional: Visualize the integrand
 try:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    # Create a mesh for visualization
-    x = np.linspace(x_min, x_max, 50)
-    y = np.linspace(y_min, y_max, 50)
-    X, Y = np.meshgrid(x, y)
-
-    Z = np.sqrt(1 + (-0.01*X + 0.001*Y)**2 + (-0.016*Y + 0.001*X)**2)
+    xplot = np.linspace(x_min, x_max, 50)
+    yplot = np.linspace(y_min, y_max, 50)
+    X, Y = np.meshgrid(xplot, yplot)
+    dZdX = a1 + 2*a3*X + a4*Y
+    dZdY = a2 + a4*X + 2*a5*Y
+    Z = np.sqrt(1 + dZdX**2 + dZdY**2)
 
     # Create figure with two subplots
     fig = plt.figure(figsize=(12, 5))
